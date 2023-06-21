@@ -1,0 +1,23 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <canvas id="canvas" width="1000" height="1000"></canvas>
+    <script src="https://webgl2fundamentals.org/webgl/resources/webgl-lessons-ui.js"></script>
+<script src="https://webgl2fundamentals.org/webgl/resources/twgl-full.min.js"></script>
+<script src="https://webgl2fundamentals.org/webgl/resources/m4.js"></script>
+<script src="main3.js"></script>
+<script>
+   canvas = document.getElementById("canvas");
+   gl = canvas.getContext('experimental-webgl');
+   positionBuff = gl.createBuffer();
+   gl.bindBuffer(gl.ARRAY_BIT_BUFFER, positionBuff)
+
+</script>
+</body>
+</html>

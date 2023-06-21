@@ -1,0 +1,2 @@
+- Rotation problem (change to basis 0, 1) -> nen la cai nay phai chuyen ve bang ma tran roi ms nhan vao chuyen lai -> khong on
+- Cannot keep aspect ratio (hinh scale duoc theo canvas nhung ti le thi bi mat)
