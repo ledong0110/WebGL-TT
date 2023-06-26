@@ -306,13 +306,13 @@ void main() {
       gl_FragColor = vec4(vColor,1);
   }
   `;
-async function main() {
+async function mains() {
     const canvas = document.querySelector("#canvas");
     const gl = canvas.getContext("webgl");
     if (!gl) {
         return;
     }
-    const response = await fetch('obj/E34_Body.obj');  
+    const response = await fetch('obj/bowl_topview.obj');  
     const text = await response.text();
     const obj = parser(text);
     const visitor = new GLParseVisitor();
@@ -364,4 +364,4 @@ async function main() {
   
 }
 
-main();
+// mains();
