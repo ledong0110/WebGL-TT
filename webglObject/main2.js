@@ -126,7 +126,37 @@ async function main(images, alphas) {
     const calibCam3Text = await calibCam3Req.text();
     const calibCam3 = calibCam3Text.split(/\n+|\s+/).map(parseFloat);
 
-   
+    const texCoordVideo = [
+        //Cam 2
+        0, 0,
+        0, 0.5,
+        0.5, 0,
+        0, 0.5,
+        0.5, 0.5,
+        0.5, 0,
+        //Cam 3
+        0.5, 0,
+        0.5, 0.5,
+        1, 0,
+        0.5, 0.5,
+        1, 0.5,
+        1, 0,
+        //Cam 0
+        0, 0.5,
+        0, 1,
+        0.5, 0.5,
+        0, 1,
+        0.5, 1,
+        0.5, 0.5,
+        //Cam1
+        0.5, 0.5,
+        0.5, 1,
+        1, 0.5,
+        0.5, 1,
+        1, 1,
+        1, 0.5
+
+    ];
 
     const obj = parser(bowlTopviewText);
     const visitor = new GLParseVisitor();
