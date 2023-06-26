@@ -5,9 +5,11 @@ function loadImage(url, callback) {
     return image;
 }
 function resizeCanvasToDisplaySize(canvas) {
+    const dpr = window.devicePixelRatio;
     // Lookup the size the browser is displaying the canvas in CSS pixels.
-    const displayWidth  = canvas.clientWidth;
-    const displayHeight = canvas.clientHeight;
+    const {width, height} = canvas.getBoundingClientRect();
+    const displayWidth  = Math.round(width * dpr);
+    const displayHeight = Math.round(height * dpr);
    
     // Check if the canvas is not the same size.
     const needResize = canvas.width  !== displayWidth ||
@@ -180,13 +182,16 @@ async function main(images, alphas) {
     
 
     const matrixUniform = gl.getUniformLocation(program, `matrix`)
-    const matrix = mat4.create()
-    mat4.scale(matrix, matrix, [0.05, 0.05, 0.05]);
+    const matrix = mat4.create();
+    const projectionMatrix = mat4.create();
+    mat4.perspective(projectionMatrix, 170*Math.PI/180, gl.canvas.clientWidth/gl.canvas.clientHeight, 0.01 ,1000000)
+    mat4.scale(matrix, matrix, [1*0.05, 1*0.05/canvas.height*canvas.width, 1]);
     // requestAnimationFrame(animate);
     // mat4.rotateY(matrix, matrix, Math.PI/2);
     // mat4.rotateZ(matrix, matrix, -Math.PI/2 );
+    // mat4.translate(matrix, [1,-0.4,0])
     mat4.rotateX(matrix, matrix, Math.PI/2 );
-    // mat4.multiply(finalMatrix, projectionMatrix, matrix);
+    // mat4.mul/tiply(matrix, projectionMatrix, matrix);
     // gl.uniformMatrix4fv(uniformLocations.matrix, false, finalMatrix);
     gl.uniformMatrix4fv(matrixUniform, false, matrix);
     
