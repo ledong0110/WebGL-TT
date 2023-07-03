@@ -21,7 +21,7 @@ var state = {
       },
     },
   };
-async function main(video, alphas, carTex, alphaTVs) {
+async function main(video, alphas, carTex, alphaTVs, icons) {
     // Get A WebGL context
     /** @type {HTMLCanvasElement} */
       const canvas = document.querySelector("#canvas");
@@ -116,31 +116,43 @@ async function main(video, alphas, carTex, alphaTVs) {
         vs, 
         fs,)
       
-        const responseCar = await fetch('obj/E34_Body.obj');  
-        const textCar = await responseCar.text();
-        const carobj = parser(textCar)
-        const carVisitor = new GLParseVisitor();
-        // 0: postion 1: color 2: normals 3: texcoord
-        const  extractCarArray = carVisitor.visit(carobj)[0];
-        const carTV = new CarViewLoading(
-            glTV,
-            canvasTV,
-            carTex,
-            extractCarArray,
-            vsCar,
-            fsCar,
-            0.6,
-            'topview'
-        )
-        const carSVM = new CarViewLoading(
-            gl,
-            canvas,
-            carTex,
-            extractCarArray,
-            vsCar,
-            fsCar,
-            0.61
-        )
+      const responseCar = await fetch('obj/E34_Body.obj');  
+      const textCar = await responseCar.text();
+      const carobj = parser(textCar)
+      const carVisitor = new GLParseVisitor();
+      // 0: postion 1: color 2: normals 3: texcoord
+      const  extractCarArray = carVisitor.visit(carobj)[0];
+      const carTV = new CarViewLoading(
+          glTV,
+          canvasTV,
+          carTex,
+          extractCarArray,
+          vsCar,
+          fsCar,
+          0.6,
+          'topview'
+      )
+      const carSVM = new CarViewLoading(
+          gl,
+          canvas,
+          carTex,
+          extractCarArray,
+          vsCar,
+          fsCar,
+          0.61
+      )
+
+      const button1 = new Button(
+        glTV,
+        canvasTV,
+        icons[0],
+      )
+      
+      const button2 = new Button(
+        glTV,
+        canvasTV,
+        icons[1],
+      )
 
       let fps = 25;
       function render() {
@@ -156,6 +168,18 @@ async function main(video, alphas, carTex, alphaTVs) {
                 [-90, -180, 0],
                 78
               )
+            button1.render(
+              [0.1,.1,1],
+              [-8,-8,0],
+              [0,0,0],
+              90
+            )
+            button2.render(
+              [0.1,.1,1],
+              [-4,-8,0],
+              [0,0,0],
+              90
+            )
           svm.render(
             [state.app.angle.x, state.app.angle.y, 0],
             // [0,0,0],
@@ -180,6 +204,7 @@ async function main(video, alphas, carTex, alphaTVs) {
     "video/video_in.mp4", 
     ['obj/scalib/alpha_0.png', 'obj/scalib/alpha_1.png', 'obj/scalib/alpha_2.png', 'obj/scalib/alpha_3.png'], 'obj/E34_Tex_Luxury_Blue.bmp', 
     ['obj/alpha/alpha_TV_0.png', 'obj/alpha/alpha_TV_1.png', 'obj/alpha/alpha_TV_2.png', 'obj/alpha/alpha_TV_3.png'], 
+    ['img/fronticon.png', 'img/rearicon.png'],
     main
   )
 

@@ -91,12 +91,13 @@ function loadImage(url, callback) {
     image.onload = callback;
     return image;
 }
-function loadVideoAndImages(urls, alphaurls, carImg, alphaTV,callback) {
+function loadVideoAndImages(urls, alphaurls, carImg, alphaTV, icons, callback) {
     var videoLoad;
     var carLoad;
     var alphas = [];
     var alphaTVs = [];
-    var imagesAndVideosToLoad =alphaurls.length + alphaTV.length +2;
+    var iconList = [];
+    var imagesAndVideosToLoad =alphaurls.length + alphaTV.length + icons.length +2;
     // Called each time an image finished loading.
     var onVideoLoad = function() {
       --imagesAndVideosToLoad;
@@ -104,7 +105,7 @@ function loadVideoAndImages(urls, alphaurls, carImg, alphaTV,callback) {
       // If all the images are loaded call the callback.
       if (imagesAndVideosToLoad == 0) {
         console.log("Loaded")
-        callback(videoLoad, alphas, carLoad, alphaTVs);
+        callback(videoLoad, alphas, carLoad, alphaTVs, iconList);
       }
     };
    
@@ -119,7 +120,10 @@ function loadVideoAndImages(urls, alphaurls, carImg, alphaTV,callback) {
         var alpha = loadImage(alphaTV[ii], onVideoLoad);
         alphaTVs.push(alpha);
       }
-
+    for (var ii = 0; ii < icons.length; ++ii) {
+      var icon = loadImage(icons[ii], onVideoLoad);
+      iconList.push(icon);
+    }
     carLoad = loadImage(carImg, onVideoLoad);
    
 }
@@ -759,7 +763,7 @@ class CarViewLoading {
       this.gl.uniform1i(this.texUniformLocation, 0);
   
     
-    }drift
+    }
     loadTexture(image) {
       const texture = this.gl.createTexture();
       this.gl.bindTexture(this.gl.TEXTURE_2D, texture);

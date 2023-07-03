@@ -1,23 +1,35 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>WebGL Button</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+        button {
+            position: absolute;
+            left: 10px;
+            top: 300px;
+        }
+    </style>
 </head>
 <body>
-    <canvas id="canvas" width="1000" height="1000"></canvas>
-    <script src="https://webgl2fundamentals.org/webgl/resources/webgl-lessons-ui.js"></script>
-<script src="https://webgl2fundamentals.org/webgl/resources/twgl-full.min.js"></script>
-<script src="https://webgl2fundamentals.org/webgl/resources/m4.js"></script>
-<script src="main3.js"></script>
-<script>
-   canvas = document.getElementById("canvas");
-   gl = canvas.getContext('experimental-webgl');
-   positionBuff = gl.createBuffer();
-   gl.bindBuffer(gl.ARRAY_BIT_BUFFER, positionBuff)
+    <canvas id="canvas" width="300" height="300"></canvas>
+    <button id="button">Click me!</button>
 
-</script>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('webgl');
+
+        // Your WebGL code here
+
+        const button = document.getElementById('button');
+        button.addEventListener('click', () => {
+            // Your JavaScript code here
+        });
+    </script>
 </body>
 </html>
