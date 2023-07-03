@@ -235,78 +235,92 @@ class GLParseVisitor extends Visitor{
     }
 }
 
-class Shader {
-    static #vertexCode;
-    static #fragmentCode;
-    static setCode (vertex, fragment){
-        Shader.vertexCode = vertex;
-        Shader.fragmentCode = fragment;
-    }
-    constructor(gl) {
-        this.gl = gl;
-    }
+// class Shader {
+//     static #vertexCode;
+//     static #fragmentCode;
+//     static setCode (vertex, fragment){
+//         Shader.vertexCode = vertex;
+//         Shader.fragmentCode = fragment;
+//     }
+//     constructor(gl) {
+//         this.gl = gl;
+//     }
 
-    createProgram() {
+//     createProgram() {
     
-        const vertexShader = this.gl.createShader(this.gl.VERTEX_SHADER);
-        this.gl.shaderSource(vertexShader, Shader.vertexCode);
-        this.gl.compileShader(vertexShader);
+//         const vertexShader = this.gl.createShader(this.gl.VERTEX_SHADER);
+//         this.gl.shaderSource(vertexShader, Shader.vertexCode);
+//         this.gl.compileShader(vertexShader);
 
-        const fragmentShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
-        this.gl.shaderSource(fragmentShader, Shader.fragmentCode);
-        this.gl.compileShader(fragmentShader);
+//         const fragmentShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
+//         this.gl.shaderSource(fragmentShader, Shader.fragmentCode);
+//         this.gl.compileShader(fragmentShader);
 
-        const program = this.gl.createProgram()
-        this.gl.attachShader(program, vertexShader);
-        this.gl.attachShader(program, fragmentShader);
-        this.gl.linkProgram(program);
+//         const program = this.gl.createProgram()
+//         this.gl.attachShader(program, vertexShader);
+//         this.gl.attachShader(program, fragmentShader);
+//         this.gl.linkProgram(program);
 
         
-        return program;
-    }
-}
-
-// class Model {
-
+//         return program;
+//     }
 // }
-class BufferInitialization {
-    static init(gl, coord, typeBuffer) {
-        var buffer = gl.createBuffer();
-        gl.bindBuffer(typeBuffer, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(coord), gl.STATIC_DRAW);
-        return buffer
-    }
-}
 
-function randomColor() { return [Math.random(), Math.random(), Math.random()]}
-const vs = `
-precision mediump float;
+// // class Model {
 
-attribute vec3 position;
-attribute vec3 color;
-varying vec3 vColor;
+// // }
+// class BufferInitialization {
+//     static init(gl, coord, typeBuffer) {
+//         var buffer = gl.createBuffer();
+//         gl.bindBuffer(typeBuffer, buffer);
+//         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(coord), gl.STATIC_DRAW);
+//         return buffer
+//     }
+// }
 
-uniform mat4 matrix;
-uniform mat4 projection_matrix;
+// function randomColor() { return [Math.random(), Math.random(), Math.random()]}
+// const vs = `
+// precision mediump float;
 
-void main() {
-    vColor = color;
-    gl_Position = matrix * vec4(position, 1.0);
-    gl_PointSize = 10.0;
-}
-`;
+//     const vec3 lightDirection = normalize(vec3(2.3, 1.6, 0.5));
+//     const float ambient = 0.1;
 
-  const fs = `
-  precision mediump float;
-  
-  varying vec3 vColor;
-  
-  void main() {
-      
-      gl_FragColor = vec4(vColor,1);
-  }
-  `;
-async function main() {
+//     attribute vec3 position;
+//     attribute vec2 uv;
+//     attribute vec3 normal;
+
+//     varying vec2 vUV;
+//     varying float vBrightness;
+
+//     uniform mat4 matrix;
+//     uniform mat4 normalMatrix;
+
+//     void main() {        
+//         vec3 worldNormal = (normalMatrix * vec4(normal, 1)).xyz;
+//         float diffuse = max(0.0, dot(worldNormal, lightDirection));
+
+//         vUV = uv;
+//         vBrightness = ambient + diffuse;
+
+//         gl_Position = matrix * vec4(position, 1);
+//     }
+// `;
+
+//   const fs = `
+//   precision mediump float;
+
+//     varying vec2 vUV;
+//     varying float vBrightness;
+
+//     uniform sampler2D textureID;
+
+//     void main() {
+//         vec4 texel = texture2D(textureID, vUV);
+//         texel.xyz *= vBrightness;
+//         gl_FragColor = texel;
+//     }
+//   `;
+async function mains() {
     const canvas = document.querySelector("#canvas");
     const gl = canvas.getContext("webgl");
     if (!gl) {
@@ -321,41 +335,89 @@ async function main() {
     if (extractArray.colors.length == 0) {
         
         for (let i = 0; i < extractArray.positions.length/3; i++) {
-            extractArray.colors.push(...randomColor());
+            extractArray.colors.push(0,1,0);
         }
     }
    
-
+    var texCoord = [
+    0.0, 1.0,
+    0.0, 0.0,
+    1.0, 1.0,
+    1.0, 0.0,
+];
     Shader.setCode(vs, fs);
     let program = new Shader(gl).createProgram()
     let positionBuffer = BufferInitialization.init(gl, extractArray.positions, gl.ARRAY_BUFFER)
-    
-    let colorBuffer = BufferInitialization.init(gl, extractArray.colors, gl.ARRAY_BUFFER);
+    console.log(extractArray.texCoord)
+    let uvBuffer = BufferInitialization.init(gl, texCoord, gl.ARRAY_BUFFER);
+
+    let normalBuffer = BufferInitialization.init(gl, extractArray.normals, gl.ARRAY_BUFFER)
 
     const positionLocation = gl.getAttribLocation(program, `position`)
     gl.enableVertexAttribArray(positionLocation);
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
     gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0 ,0);
 
-    const colorLocation = gl.getAttribLocation(program, `color`)
-    gl.enableVertexAttribArray(colorLocation);
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer)
-    gl.vertexAttribPointer(colorLocation, 3, gl.FLOAT, false, 0 ,0);
+    const uvLocation = gl.getAttribLocation(program, `uv`)
+    gl.enableVertexAttribArray(uvLocation);
+    gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer)
+    gl.vertexAttribPointer(uvLocation, 2, gl.FLOAT, false, 0 ,0);
 
+    const normalLocation = gl.getAttribLocation(program, `normal`);
+    gl.enableVertexAttribArray(normalLocation);
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+    gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, 0);
+
+    function loadTexture(url) {
+        const texture = gl.createTexture();
+        const image = new Image();
+    
+        image.onload = e => {
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+            gl.generateMipmap(gl.TEXTURE_2D);
+        };
+    
+        image.src = url;
+        return texture;
+    }
     gl.useProgram(program);
     gl.enable(gl.DEPTH_TEST);
+    let texIDU = gl.getUniformLocation(program, 'textureID')
+    // const brick = loadTexture('obj/E34_Tex_Luxury_Blue.bmp')
+    const brick = loadTexture('img/front.png')
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, brick);
+    gl.uniform1i(texIDU, 0);
+    
+    
     const matrixUniform = gl.getUniformLocation(program, `matrix`)
+    const normalMatrixUniform = gl.getUniformLocation(program, `normalMatrix`)
+    
+
     const matrix = mat4.create()
+    const normalMatrix = mat4.create();
     // mat4.translate(matrix, matrix, [.2, .5, 0]);
     mat4.scale(matrix, matrix, [0.25, 0.25, 0.25]);
     
     function animate() {
         // requestAnimationFrame(animate);
         // mat4.rotateY(matrix, matrix, Math.PI/2);
-        mat4.rotateZ(matrix, matrix, -Math.PI/2 );
-       mat4.rotateX(matrix, matrix, Math.PI/2 );
+        const u_lightDirection = vec4.create();
+       
+        // mat4.rotateZ(matrix, matrix, -Math.PI/2 );
+    //    mat4.rotateX(matrix, matrix, -Math.PI/2 );
+       mat4.invert(normalMatrix, matrix);
+        mat4.transpose(normalMatrix, normalMatrix);
         // mat4.multiply(finalMatrix, projectionMatrix, matrix);
         // gl.uniformMatrix4fv(uniformLocations.matrix, false, finalMatrix);
+        gl.uniformMatrix4fv(normalMatrixUniform, false, normalMatrix);
         gl.uniformMatrix4fv(matrixUniform, false, matrix);
         gl.drawArrays(gl.TRIANGLES, 0, extractArray.positions.length/3);
     }
@@ -363,5 +425,4 @@ async function main() {
     animate();
   
 }
-
-main();
+// mains();

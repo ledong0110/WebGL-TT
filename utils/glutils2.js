@@ -176,7 +176,7 @@ class BufferInitialization {
     static init(gl, coord, typeBuffer) {
         var buffer = gl.createBuffer();
         gl.bindBuffer(typeBuffer, buffer);
-        gl.bufferData(typeBuffer, new Float32Array(coord), gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(coord), gl.STATIC_DRAW);
         return buffer
     }
 }
@@ -316,6 +316,211 @@ class ImageLoading {
 }
 
 
+class ImageStitchLoading {
+   
+    gl;
+
+    imageList;
+    alphaList;
+    canvas;
+    isLoaded;
+    program;
+    positionLocation;
+    texCoordLocations;
+    uniformLocations;
+    images;
+    alphas;
+    translation;
+    rotation;
+    scaling;
+    default_ratio;
+   
+    constructor(gl, canvas, imageList, alphaList) {
+        this.gl = gl;
+       
+        this.canvas = canvas;
+        this.isLoaded = false;
+        this.program = new Shader(this.gl).createProgram()
+        this.setup();
+      
+        this.imageList = imageList;
+        this.alphaList = alphaList
+        this.images = [];
+        this.alphas = [];
+        this.rotation = 0;
+        this.translation = [0, 0, 0];
+        this.scaling = 1;
+    }
+    setup() {
+        this.gl.enable(this.gl.DEPTH_TEST);
+        this.gl.enable(this.gl.BLEND);
+        // this.gl.blendEquation(this.gl.FUNC_AVERAGE);
+        this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ON);
+        this.positionLocation = this.gl.getAttribLocation(this.program, "position");
+        this.texCoordLocations = {
+            texCoord: this.gl.getAttribLocation(this.program, "texCoord"),
+            texCoord1: this.gl.getAttribLocation(this.program, "texCoord1"),
+            texCoord2: this.gl.getAttribLocation(this.program, "texCoord2"),
+            texCoord3: this.gl.getAttribLocation(this.program, "texCoord3"),
+        }
+        this.uniformLocations = {
+            transformMatrix: this.gl.getUniformLocation(this.program, `matrix`),
+            u_image: this.gl.getUniformLocation(this.program, `u_image`),
+            u_image1: this.gl.getUniformLocation(this.program, `u_image1`),
+            u_image2: this.gl.getUniformLocation(this.program, `u_image2`),
+            u_image3: this.gl.getUniformLocation(this.program, `u_image3`),
+            u_image_alpha: this.gl.getUniformLocation(this.program, `u_image_alpha`),
+            u_image1_alpha: this.gl.getUniformLocation(this.program, `u_image1_alpha`),
+            u_image2_alpha: this.gl.getUniformLocation(this.program, `u_image2_alpha`),
+            u_image3_alpha: this.gl.getUniformLocation(this.program, `u_image3_alpha`),
+        };    
+    }
+    loadImage(direction, texCoord, default_ratio=0.4, scale=1, vertices=[]) {
+        function loadImage(url, callback) {
+            var image = new Image();
+            
+            image.src = url;
+            image.onload = callback;
+            image.crossOrigin = "anonymous";
+            return image;
+          }
+        var onImageLoad = function() {
+            --imagesToLoad;
+            // If all the images are loaded call the callback.
+            if (imagesToLoad == 0) {
+                run();
+                
+            }
+          };
+        const run = () => {
+            this.renderImage(vertices, texCoord, direction);
+        }
+        let imagesToLoad = this.imageList.length*2;
+        
+       
+      
+        this.scaling = scale;
+        this.default_ratio = default_ratio;
+
+        for (var ii = 0; ii < imagesToLoad/2; ++ii) {
+            
+            var image = loadImage(this.imageList[ii], onImageLoad);
+            this.images.push(image);
+
+            var alpha = loadImage(this.alphaList[ii], onImageLoad);
+            this.alphas.push(alpha);
+          }
+        
+
+       
+    }
+    renderImage(vertices, texCoord, direction) {
+        var aspectRatio = this.images[0].width/this.images[0].height;
+        vertices = vertices.length == 0 ? initializeVertexKeepRatio(this.image):vertices;
+        
+        var positionBuffer = BufferInitialization.init(this.gl, vertices, this.gl.ARRAY_BUFFER);
+        
+        this.gl.enableVertexAttribArray(this.positionLocation);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
+        this.gl.vertexAttribPointer(
+            this.positionLocation, 3, this.gl.FLOAT, false, 0, 0);
+        
+        var texcoordBuffers = texCoord.map((texcoord) => BufferInitialization.init(this.gl, texcoord, this.gl.ARRAY_BUFFER));
+         //1
+        this.gl.enableVertexAttribArray(this.texCoordLocations.texCoord);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, texcoordBuffers[0]);
+        this.gl.vertexAttribPointer(
+            this.texCoordLocations.texCoord, 2, this.gl.FLOAT, false, 0, 0);
+         //2   
+        this.gl.enableVertexAttribArray(this.texCoordLocations.texCoord1);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, texcoordBuffers[1]);
+        this.gl.vertexAttribPointer(
+            this.texCoordLocations.texCoord1, 2, this.gl.FLOAT, false, 0, 0);
+         //3
+        this.gl.enableVertexAttribArray(this.texCoordLocations.texCoord2);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, texcoordBuffers[2]);
+        this.gl.vertexAttribPointer(
+            this.texCoordLocations.texCoord2, 2, this.gl.FLOAT, false, 0, 0);
+        //4
+        this.gl.enableVertexAttribArray(this.texCoordLocations.texCoord3);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, texcoordBuffers[3]);
+        this.gl.vertexAttribPointer(
+            this.texCoordLocations.texCoord3, 2, this.gl.FLOAT, false, 0, 0);
+            
+        // var u_image = this.uniformLocations.u_image;
+       
+        
+        // this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, 1);
+        this.gl.useProgram(this.program)
+        this.loadTexture(this.gl.TEXTURE0, this.images[0]);
+        this.loadTexture(this.gl.TEXTURE1, this.images[1]);
+        this.loadTexture(this.gl.TEXTURE2, this.images[2]);
+        this.loadTexture(this.gl.TEXTURE3, this.images[3]);
+
+
+        this.gl.uniform1i(this.uniformLocations.u_image, 0)
+        this.gl.uniform1i(this.uniformLocations.u_image1, 1)
+        this.gl.uniform1i(this.uniformLocations.u_image2, 2)
+        this.gl.uniform1i(this.uniformLocations.u_image3, 3)
+        
+        
+        this.loadTexture(this.gl.TEXTURE4, this.alphas[0]);
+        this.loadTexture(this.gl.TEXTURE5, this.alphas[1]);
+        this.loadTexture(this.gl.TEXTURE6, this.alphas[2]);
+        this.loadTexture(this.gl.TEXTURE7, this.alphas[3]);
+        // this.gl.TexEnvi(this.gl.GL_TEXTURE_ENV, this.gl.GL_TEXTURE_ENV_MODE, this.gl.GL_DECAL);
+        this.gl.uniform1i(this.uniformLocations.u_image_alpha, 4)
+        this.gl.uniform1i(this.uniformLocations.u_image1_alpha, 5)
+        this.gl.uniform1i(this.uniformLocations.u_image2_alpha, 6)
+        this.gl.uniform1i(this.uniformLocations.u_image3_alpha, 7)
+        
+        // var deltaY = 1-aspectRatio;
+        // var deltaX = 1-0.5
+        var scaling = [this.scaling*this.default_ratio, this.scaling/this.canvas.height*this.canvas.width*this.default_ratio, 0.1];
+        // var getSc = selectScaler([vertices[0], vertices[1]], [vertices[6], vertices[7]], [0,0.5*scaling[1],0], [0.5*scaling[0], 0, 0], [0.5*scaling[0], 0, 0], [0, 0.5*scaling[1], 0], scaling)
+        // console.log(getSc)
+        // scaling[0] = scaling[0]*getSc;
+        // scaling[1] = scaling[1]*getSc;
+        // scaling = [this.scaling*this.default_ratio*getSc, this.scaling/this.canvas.height*this.canvas.width*this.default_ratio*getSc, 1];
+        console.log(vertices)
+        
+        // scaling = [0.3, 0.3, 0.2]
+        this.rotation = [70, 0,  180]
+        var matrix = computeMatrix(aspectRatio, this.canvas, this.rotation, this.translation, scaling)
+        // var matrix = mat4.create()
+        // mat4.scale(matrix, matrix, [0.4,0.4,0.4])
+        // mat4.perspective(matrix, 
+        //     179 * Math.PI / 180, // vertical field-of-view (angle, radians)
+        //     canvas.clientWidth / canvas.clientHeight, // aspect W/H
+        //     1e-3, // near cull distance
+        //     1e4 // far cull distance
+        // );
+        this.gl.uniformMatrix4fv(this.uniformLocations.transformMatrix, false, matrix);
+        this.draw_scene(vertices.length);
+        
+        
+    }
+    loadTexture(activeTexture, image) {
+        var texture = this.gl.createTexture();
+        this.gl.activeTexture(activeTexture);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+        
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
+
+        this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, image);
+    }
+    draw_scene(pos_len) {
+        var primitiveType = this.gl.TRIANGLES;
+        var offset  = 0;
+        var count = pos_len/3;
+        
+        this.gl.drawArrays(primitiveType, offset, count);
+    }
+}
+
 class CarModelLoading {
    
     gl;
@@ -332,22 +537,21 @@ class CarModelLoading {
     scaling;
     default_ratio;
    
-    constructor(gl, canvas, imageSrc) {
+    constructor(gl, canvas, vs, fs) {
         this.gl = gl;
-        this.imageSRc = imageSrc;
+       
         this.canvas = canvas;
         this.isLoaded = false;
-        this.program = new Shader(this.gl).createProgram()
+        this.program = new Shader(this.gl).createProgram(vs, fs)
         this.setup();
-        this.image = new Image();
-        this.image.crossOrigin = "anonymous";
-        this.image.src = this.imageSRc;
+       
         this.rotation = 0;
         this.translation = [0, 0, 0];
         this.scaling = 1;
     }
     setup() {
         this.gl.enable(this.gl.DEPTH_TEST);
+        this.texture = this.gl.createTexture();
         this.positionLocation = this.gl.getAttribLocation(this.program, "position");
         this.texCoordLocation = this.gl.getAttribLocation(this.program, "texCoord");
         this.uniformLocations = {
@@ -355,59 +559,59 @@ class CarModelLoading {
             u_image: this.gl.getUniformLocation(this.program, `u_image`),
         };    
     }
-    loadImage(direction, texCoord, default_ratio=0.9, scale=1, vertices=[]) {
+    loadImage(carTexture, texCoord, default_ratio=0.9, scale=1, vertices=[]) {
         this.scaling = scale;
+        this.image = carTexture;
         this.default_ratio = default_ratio;
-        if (!this.isLoaded)
-        {
-            this.image.addEventListener('load', () => {
-                this.isLoaded = true
-                this.renderImage(vertices, texCoord, direction);
-              
-            })
-        }
-        else
-            this.renderImage(vertices, texCoord);
+        this.renderImage(vertices, texCoord);
     }
     renderImage(vertices, texCoord, direction) {
         var aspectRatio = this.image.width/this.image.height;
         vertices = vertices.length == 0 ? initializeVertexKeepRatio(this.image):vertices;
         
-        var positionBuffer = BufferInitialization.init(this.gl, vertices, this.gl.ARRAY_BUFFER);
+        this.positionBuffer = BufferInitialization.init(this.gl, vertices, this.gl.ARRAY_BUFFER);
         
+        
+        this.texcoordBuffer = BufferInitialization.init(this.gl, texCoord, this.gl.ARRAY_BUFFER);
+
+        var scaling = [this.scaling*this.default_ratio, this.scaling/this.canvas.height*this.canvas.width*this.default_ratio, this.scaling*this.default_ratio];
+        this.rotation = [-90, 0,  -90]
+        this.matrix = computeMatrix(aspectRatio, this.canvas, this.rotation, this.translation, scaling)
+    }
+    load_car() {
+        this.gl.useProgram(this.program)
         this.gl.enableVertexAttribArray(this.positionLocation);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
         this.gl.vertexAttribPointer(
             this.positionLocation, 3, this.gl.FLOAT, false, 0, 0);
             
-        var texcoordBuffer = BufferInitialization.init(this.gl, texCoord, this.gl.ARRAY_BUFFER);
-            
+
+
         this.gl.enableVertexAttribArray(this.texCoordLocation);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, texcoordBuffer);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.texcoordBuffer);
         this.gl.vertexAttribPointer(
             this.texCoordLocation, 2, this.gl.FLOAT, false, 0, 0);
             
-        
+            
+        this.gl.useProgram(this.program)
+        this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, 1);
         // var u_image = this.uniformLocations.u_image;
        
+        this.loadTexture(this.gl.TEXTURE3);
+        this.gl.uniform1i(this.uniformLocations.u_image, 3)
         
-        // this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, 1);
-        this.loadTexture(this.gl.TEXTURE0);
-        this.gl.useProgram(this.program)
-        this.gl.uniform1i(this.uniformLocations.u_image, 0)
         // var deltaY = 1-aspectRatio;
         // var deltaX = 1-0.5
-        var scaling = [this.scaling*this.default_ratio, this.scaling/this.canvas.height*this.canvas.width*this.default_ratio, this.scaling*this.default_ratio];
+        
         // var getSc = selectScaler([vertices[0], vertices[1]], [vertices[6], vertices[7]], [0,0.5*scaling[1],0], [0.5*scaling[0], 0, 0], [0.5*scaling[0], 0, 0], [0, 0.5*scaling[1], 0], scaling)
         // console.log(getSc)
         // scaling[0] = scaling[0]*getSc;
         // scaling[1] = scaling[1]*getSc;
         // scaling = [this.scaling*this.default_ratio*getSc, this.scaling/this.canvas.height*this.canvas.width*this.default_ratio*getSc, 1];
-        console.log(vertices)
+        // console.log(vertices)
         
         // scaling = [0.3, 0.3, 0.2]
-        this.rotation = [100, 0,  0]
-        var matrix = computeMatrix(aspectRatio, this.canvas, this.rotation, this.translation, scaling)
+        
         // var matrix = mat4.create()
         // mat4.scale(matrix, matrix, [0.4,0.4,0.4])
         // mat4.perspective(matrix, 
@@ -416,15 +620,16 @@ class CarModelLoading {
         //     1e-3, // near cull distance
         //     1e4 // far cull distance
         // );
-        this.gl.uniformMatrix4fv(this.uniformLocations.transformMatrix, false, matrix);
+        this.gl.uniformMatrix4fv(this.uniformLocations.transformMatrix, false, this.matrix);
         this.draw_scene(vertices.length);
         
         
     }
     loadTexture(activeTexture) {
-        var texture = this.gl.createTexture();
+       
         this.gl.activeTexture(activeTexture);
-        this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, null);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture);
         
         this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
         this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
@@ -439,9 +644,9 @@ class CarModelLoading {
         var count = pos_len/3;
         
         this.gl.drawArrays(primitiveType, offset, count);
+        
     }
 }
-
 
 async function loadShadersAndRun(basePath) {
     const vertexShaderPromise = fetch(`${basePath}/vertexShader.glsl`)

@@ -170,7 +170,7 @@ async function main() {
   // Get A WebGL context
   /** @type {HTMLCanvasElement} */
   const canvas = document.querySelector("#canvas");
-  const gl = canvas.getContext("webgl");
+  const gl = canvas.getContext("webgl", {  premultipliedAlpha: false});
   if (!gl) {
     return;
   }
@@ -206,8 +206,8 @@ async function main() {
   void main () {
     vec3 normal = normalize(v_normal);
     float fakeLight = dot(u_lightDirection, normal) * .5 + .5;
-    vec4 diffuse = u_diffuse * v_color;
-    gl_FragColor = vec4(diffuse.rgb * fakeLight, diffuse.a);
+    vec4 diffuse = u_diffuse * vec4(1,0,0,1);
+    gl_FragColor = vec4(vec3(1,0,0) * fakeLight, diffuse.a);
   }
   `;
 
@@ -215,7 +215,7 @@ async function main() {
   // compiles and links the shaders, looks up attribute and uniform locations
   const meshProgramInfo = webglUtils.createProgramInfo(gl, [vs, fs]);
 
-  const response = await fetch('obj/E34_Body.obj');  
+  const response = await fetch('obj/Elipsesphere.obj');  
   const text = await response.text();
   const obj = parseOBJ(text);
 
@@ -309,11 +309,11 @@ async function main() {
   function render(time) {
     time *= 0.001;  // convert to seconds
 
-    webglUtils.resizeCanvasToDisplaySize(gl.canvas);
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    // webglUtils.resizeCanvasToDisplaySize(gl.canvas);
+    // gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.enable(gl.DEPTH_TEST);
 
-    const fieldOfViewRadians = degToRad(60);
+    const fieldOfViewRadians = degToRad(90);
     const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
     const projection = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
 
@@ -325,7 +325,7 @@ async function main() {
     const view = m4.inverse(camera);
 
     const sharedUniforms = {
-      u_lightDirection: m4.normalize([-1, 3, 5]),
+      u_lightDirection: m4.normalize([0, -3, -5]),
       u_view: view,
       u_projection: projection,
     };
@@ -338,8 +338,8 @@ async function main() {
     // compute the world matrix once since all parts
     // are at the same space.
     let u_world = m4.yRotation(time);
-     u_world = m4.zRotation(time);
-     u_world = m4.xRotation(time);
+    //  u_world = m4.zRotation(time);
+    //  u_world = m4.yRotation(time);
     u_world = m4.translate(u_world, ...objOffset);
 
     for (const {bufferInfo, material} of parts) {
