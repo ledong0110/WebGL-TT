@@ -793,8 +793,8 @@ class CarViewLoading {
     
     render(rotation, fielOfView) {
         // this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, 1);
-        this.gl.enable(this.gl.DEPTH_TEST);
-        this.computeMatrix(rotation, fielOfView);
+      this.gl.enable(this.gl.DEPTH_TEST);
+      this.computeMatrix(rotation, fielOfView);
     
   
       this.enableAttribLocation();

@@ -214,11 +214,15 @@ async function main() {
 
   // compiles and links the shaders, looks up attribute and uniform locations
   const meshProgramInfo = webglUtils.createProgramInfo(gl, [vs, fs]);
-
+  const frontViewReq = await (await fetch('obj/tire_views/frontLeftWheelView3DMesh.txt')).text()
+      
+  const frontView = frontViewReq.split(/\n+|\s+/).map(parseFloat);
   const response = await fetch('obj/Elipsesphere.obj');  
   const text = await response.text();
   const obj = parseOBJ(text);
-
+  console.log(frontViewReq)
+  obj.geometries[0].data.position = frontView;
+  console.log(obj.geometries[0].data.position)
   const parts = obj.geometries.map(({data}) => {
     // Because data is just named arrays like this
     //

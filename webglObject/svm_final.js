@@ -7,6 +7,7 @@ var state = {
         lastY: -1,
       },
       pressedKeys: {},
+      mode: 'svm',
     },
     animation: {},
     app: {
@@ -47,6 +48,16 @@ async function main(video, alphas, carTex, alphaTVs, icons) {
       const vsCar = await (await fetch('shader/vertexShaderCar.glsl')).text()
       const fsCar = await (await fetch('shader/fragmentShaderCar.glsl')).text()
       
+      // Single View
+      const frontViewReq = await (await fetch('obj/views/frontV3DMesh.txt')).text()
+      const frontView = frontViewReq.split(/\n+|\s+/).map(parseFloat);
+      const frontViewUVReq = await (await fetch('obj/views/frontVUV.txt')).text()
+      const frontViewUV = frontViewUVReq.split(/\n+|\s+/).map(parseFloat);
+      const rearViewReq = await (await fetch('obj/views/rearV3DMesh.txt')).text()
+      const rearView = rearViewReq.split(/\n+|\s+/).map(parseFloat);
+      const rearViewUVReq = await (await fetch('obj/views/rearVUV.txt')).text()
+      const rearViewUV = rearViewUVReq.split(/\n+|\s+/).map(parseFloat);
+
       // Top view
       const calibCam0TVReq = await fetch('obj/calib_cam0_topview.txt');  
       const calibCam0TVText = await calibCam0TVReq.text();
@@ -141,22 +152,24 @@ async function main(video, alphas, carTex, alphaTVs, icons) {
           fsCar,
           0.61
       )
+      const frontViewLoading = new LoadScene(gl, canvas, video, frontView, frontViewUV);
 
-      const button1 = new Button(
-        glTV,
-        canvasTV,
-        icons[0],
-      )
+      // const button1 = new Button(
+      //   glTV,
+      //   canvasTV,
+      //   icons[0],
+      // )
       
-      const button2 = new Button(
-        glTV,
-        canvasTV,
-        icons[1],
-      )
+      // const button2 = new Button(
+      //   glTV,
+      //   canvasTV,
+      //   icons[1],
+      // )
 
       let fps = 25;
-      function render() {
-        // time *= 0.01
+      time = 0.01
+      function render(time) {
+        time *= 0.01
           gl.clearColor(0,0,0,1);
           gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
 
@@ -168,28 +181,39 @@ async function main(video, alphas, carTex, alphaTVs, icons) {
                 [-90, -180, 0],
                 78
               )
-            button1.render(
-              [0.1,.1,1],
-              [-8,-8,0],
-              [0,0,0],
-              90
+            // button1.render(
+            //   [0.1,.1,1],
+            //   [-8,-8,0],
+            //   [0,0,0],
+            //   90
+            // )
+            // button2.render(
+            //   [0.1,.1,1],
+            //   [-4,-8,0],
+            //   [0,0,0],
+            //   90
+            // )
+           
+          if (state.ui.mode == 'svm') {
+            svm.render(
+              [state.app.angle.x, state.app.angle.y, 0],
+              // [0,0,0],
+              36
             )
-            button2.render(
-              [0.1,.1,1],
-              [-4,-8,0],
-              [0,0,0],
-              90
+            carSVM.render(
+              [state.app.angle.x, state.app.angle.y, 0],
+              // [0,0,0],
+              36
             )
-          svm.render(
-            [state.app.angle.x, state.app.angle.y, 0],
-            // [0,0,0],
-            36
-          )
-          carSVM.render(
-            [state.app.angle.x, state.app.angle.y, 0],
-            // [0,0,0],
-            36
-          )
+          }
+          else 
+            frontViewLoading.render(
+            
+              [0, -90, 0],
+            
+              75,
+              state.ui.mode
+            )
           
          
   
@@ -258,11 +282,26 @@ async function main(video, alphas, carTex, alphaTVs, icons) {
     state.ui.mouse.lastX = x;
     state.ui.mouse.lastY = y;
   }
-  $("#CameraViewX").on("input change", (e) => {
-    cameraPos[0] = parseFloat(e.target.value)
+  $("#btn1").on("click", (e) => {
+   
+    state.ui.mode = 'svm';
   
   });
-  $("#CameraViewY").on("input change", (e) => {
-    cameraPos[1] = parseFloat(e.target.value)
-   
+  $("#btn2").on("click", (e) => {
+    state.ui.mode = 'front';
+  
+  });
+
+  $("#btn3").on("click", (e) => {
+    state.ui.mode = 'rear';
+  
+  });
+
+  $("#btn4").on("click", (e) => {
+    state.ui.mode = 'left';
+  
+  });
+  $("#btn5").on("click", (e) => {
+    state.ui.mode = 'right';
+  
   });
