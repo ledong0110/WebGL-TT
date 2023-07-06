@@ -41,22 +41,72 @@ async function main(video, alphas, carTex, alphaTVs, icons) {
     canvas.onmousedown = mousedown;
     canvas.onmouseup = mouseup;
     canvas.onmousemove = mousemove;
-  
+   canvas.addEventListener("touchstart", mousedown);
+   canvas.addEventListener("touchend", mouseup);
+  //  canvas.addEventListener("touchcancel", handleCancel);
+   canvas.addEventListener("touchmove", mousemove);
       const vs = await (await fetch('shader/vertexShader2.glsl')).text()
       const fs = await (await fetch('shader/fragmentShader2.glsl')).text()
       
       const vsCar = await (await fetch('shader/vertexShaderCar.glsl')).text()
       const fsCar = await (await fetch('shader/fragmentShaderCar.glsl')).text()
       
+      // Tire view
+      const frontLeftViewReq = await (await fetch('obj/tire_views/frontLeftWheelView3DMesh.txt')).text()
+      const frontLeftView = frontLeftViewReq.split(/\n+|\s+/).map(parseFloat);
+      frontLeftView.pop();
+      const frontLeftViewUVReq = await (await fetch('obj/tire_views/frontLeftWheelViewUV.txt')).text()
+      const frontLeftViewUV = frontLeftViewUVReq.split(/\n+|\s+/).map(parseFloat);
+      frontLeftViewUV.pop();
+
+      const frontRightViewReq = await (await fetch('obj/tire_views/frontRightWheelView3DMesh.txt')).text()
+      const frontRightView = frontRightViewReq.split(/\n+|\s+/).map(parseFloat);
+      frontRightView.pop();
+      const frontRightViewUVReq = await (await fetch('obj/tire_views/frontRightWheelViewUV.txt')).text()
+      const frontRightViewUV = frontRightViewUVReq.split(/\n+|\s+/).map(parseFloat);
+      frontRightViewUV.pop();
+
+      const rearLeftViewReq = await (await fetch('obj/tire_views/rearLeftWheelView3DMesh.txt')).text()
+      const rearLeftView = rearLeftViewReq.split(/\n+|\s+/).map(parseFloat);
+      rearLeftView.pop();
+      const rearLeftViewUVReq = await (await fetch('obj/tire_views/rearLeftWheelViewUV.txt')).text()
+      const rearLeftViewUV = rearLeftViewUVReq.split(/\n+|\s+/).map(parseFloat);
+      rearLeftViewUV.pop();
+
+      const rearRightViewReq = await (await fetch('obj/tire_views/rearRightWheelView3DMesh.txt')).text()
+      const rearRightView = rearRightViewReq.split(/\n+|\s+/).map(parseFloat);
+      rearRightView.pop();
+      const rearRightViewUVReq = await (await fetch('obj/tire_views/rearRightWheelViewUV.txt')).text()
+      const rearRightViewUV = rearRightViewUVReq.split(/\n+|\s+/).map(parseFloat);
+      rearRightViewUV.pop();
       // Single View
-      const frontViewReq = await (await fetch('obj/views/frontV3DMesh.txt')).text()
+      const leftViewReq = await (await fetch('obj/views/leftView3DMesh.txt')).text()
+      const leftView = leftViewReq.split(/\n+|\s+/).map(parseFloat);
+      const leftViewUVReq = await (await fetch('obj/views/leftViewUV.txt')).text()
+      const leftViewUV = leftViewUVReq.split(/\n+|\s+/).map(parseFloat);
+      leftView.pop()
+      leftViewUV.pop()
+
+      const frontViewReq = await (await fetch('obj/views/frontView3DMesh.txt')).text()
       const frontView = frontViewReq.split(/\n+|\s+/).map(parseFloat);
-      const frontViewUVReq = await (await fetch('obj/views/frontVUV.txt')).text()
+      const frontViewUVReq = await (await fetch('obj/views/frontViewUV.txt')).text()
       const frontViewUV = frontViewUVReq.split(/\n+|\s+/).map(parseFloat);
-      const rearViewReq = await (await fetch('obj/views/rearV3DMesh.txt')).text()
+      frontView.pop()
+      frontViewUV.pop()
+
+      const rearViewReq = await (await fetch('obj/views/rearView3DMesh.txt')).text()
       const rearView = rearViewReq.split(/\n+|\s+/).map(parseFloat);
-      const rearViewUVReq = await (await fetch('obj/views/rearVUV.txt')).text()
+      const rearViewUVReq = await (await fetch('obj/views/rearViewUV.txt')).text()
       const rearViewUV = rearViewUVReq.split(/\n+|\s+/).map(parseFloat);
+      rearView.pop()
+      rearViewUV.pop()
+
+      const rightViewReq = await (await fetch('obj/views/rightView3DMesh.txt')).text()
+      const rightView = rightViewReq.split(/\n+|\s+/).map(parseFloat);
+      const rightViewUVReq = await (await fetch('obj/views/rightViewUV.txt')).text()
+      const rightViewUV = rightViewUVReq.split(/\n+|\s+/).map(parseFloat);
+      rightView.pop()
+      rightViewUV.pop()
 
       // Top view
       const calibCam0TVReq = await fetch('obj/calib_cam0_topview.txt');  
@@ -152,8 +202,16 @@ async function main(video, alphas, carTex, alphaTVs, icons) {
           fsCar,
           0.61
       )
-      const frontViewLoading = new LoadScene(gl, canvas, video, frontView, frontViewUV);
-
+      const singleViewLoading = new LoadScene(gl, canvas, video, 
+                                            [leftView, frontView, rearView, rightView],
+                                            [leftViewUV, frontViewUV, rearViewUV, rightViewUV]
+                                            );
+      console.log([frontLeftView, frontRightView])
+      const tireViewLoading = new LoadSceneTire(gl, canvas, video, 
+                                            [frontLeftView, frontRightView, rearLeftView, rearRightView], 
+                                            [frontLeftViewUV,  frontRightViewUV, rearLeftViewUV, rearRightViewUV], 
+                                            1
+                                            );
       // const button1 = new Button(
       //   glTV,
       //   canvasTV,
@@ -206,15 +264,27 @@ async function main(video, alphas, carTex, alphaTVs, icons) {
               36
             )
           }
-          else 
-            frontViewLoading.render(
+          else
+            if (state.ui.mode.split(' ')[0] != 'tire') {
+              singleViewLoading.render(
+              
+                [0, 0, 0],
+              
+                60,
+                state.ui.mode
+              )
             
-              [0, -90, 0],
-            
-              75,
-              state.ui.mode
-            )
-          
+                
+            } else
+            {
+             
+              tireViewLoading.render(
+                [0, 0, 0],
+
+                60,
+                state.ui.mode.split(' ')[1]
+              )
+            }
          
   
           setTimeout(() => {
@@ -303,5 +373,13 @@ async function main(video, alphas, carTex, alphaTVs, icons) {
   });
   $("#btn5").on("click", (e) => {
     state.ui.mode = 'right';
+  
+  });
+  $("#btn6").on("click", (e) => {
+    state.ui.mode = 'tire front';
+  
+  });
+  $("#btn7").on("click", (e) => {
+    state.ui.mode = 'tire rear';
   
   });

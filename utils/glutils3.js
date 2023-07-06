@@ -378,7 +378,9 @@ class SurroundingViewLoading {
     this.canvas = canvas;
     this.gl = gl;
     this.video = video;
+    // this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, 1);
     this.texture = this.loadTexture(this.video);
+    // this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, 0);
     this.texturealpha0 = this.loadTexture(alphas[0]);
     this.texturealpha1 = this.loadTexture(alphas[1]);
     this.texturealpha2 = this.loadTexture(alphas[2]);
@@ -472,7 +474,7 @@ class SurroundingViewLoading {
     this.gl.uniformMatrix4fv(uniformLocation.u_projection, false, projection);
 
     const u_world = mat4.create();
-
+    
     // mat4.rotateZ(u_world, u_world, rotation[2]);
     // mat4.rotateY(u_world, u_world, rotation[1]);
     // mat4.rotateX(u_world, u_world, rotation[0]);
@@ -590,6 +592,7 @@ class SurroundingViewLoading {
     this.enableAttribLocation();
 
     this.updateTexture(this.video);
+    
     // CAM 0, 3;
     this.enableAttribTex(this.texture, this.texturealpha0, this.calib0Buffer, this.cutTexCam0);
 
@@ -598,7 +601,6 @@ class SurroundingViewLoading {
     this.enableAttribTex(this.texture, this.texturealpha3, this.calib3Buffer, this.cutTexCam3);
     
     this.gl.drawArrays(this.gl.TRIANGLES, 0, this.parseObj.positions.length/3);
-    
     // CAM 1, 2
     
     this.enableAttribTex(this.texture, this.texturealpha1, this.calib1Buffer, this.cutTexCam1);
