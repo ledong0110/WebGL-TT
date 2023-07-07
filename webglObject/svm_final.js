@@ -41,16 +41,19 @@ async function main(video, alphas, carTex, alphaTVs, icons) {
     canvas.onmousedown = mousedown;
     canvas.onmouseup = mouseup;
     canvas.onmousemove = mousemove;
-   canvas.addEventListener("touchstart", mousedown);
-   canvas.addEventListener("touchend", mouseup);
-  //  canvas.addEventListener("touchcancel", handleCancel);
-   canvas.addEventListener("touchmove", mousemove);
+  //  canvas.addEventListener("touchstart", mousedown, {passive: false});
+  //  canvas.addEventListener("touchend", mouseup);
+  // //  canvas.addEventListener("touchcancel", handleCancel);
+  //  canvas.addEventListener("touchmove", mousemove);
       const vs = await (await fetch('shader/vertexShader2.glsl')).text()
       const fs = await (await fetch('shader/fragmentShader2.glsl')).text()
       
       const vsCar = await (await fetch('shader/vertexShaderCar.glsl')).text()
       const fsCar = await (await fetch('shader/fragmentShaderCar.glsl')).text()
       
+      // Log Car State
+      const carStateText = await (await fetch('video/video_in.txt')).text()
+      const carState = getCarState(carStateText);
       // Tire view
       const frontLeftViewReq = await (await fetch('obj/tire_views/frontLeftWheelView3DMesh.txt')).text()
       const frontLeftView = frontLeftViewReq.split(/\n+|\s+/).map(parseFloat);
@@ -176,13 +179,35 @@ async function main(video, alphas, carTex, alphaTVs, icons) {
         [calibCam0, calibCam1, calibCam2, calibCam3], 
         vs, 
         fs,)
-      
-      const responseCar = await fetch('obj/E34_Body.obj');  
+      // Car
+      const responseCar = await fetch('obj/Car_Body.obj');  
       const textCar = await responseCar.text();
       const carobj = parser(textCar)
       const carVisitor = new GLParseVisitor();
       // 0: postion 1: color 2: normals 3: texcoord
       const  extractCarArray = carVisitor.visit(carobj)[0];
+
+     
+      const responseWheelFL = await fetch('obj/wheels/wheel_front_left.obj');  
+      const textWheelFL = await responseWheelFL.text();
+      const wheelFLobj = parser(textWheelFL)
+      const  extractWheelFL = carVisitor.visit(wheelFLobj)[0];
+
+      const responseWheelFR = await fetch('obj/wheels/wheel_front_right.obj');  
+      const textWheelFR = await responseWheelFR.text();
+      const wheelFRobj = parser(textWheelFR)
+      const  extractWheelFR = carVisitor.visit(wheelFRobj)[0];
+      
+      const responseWheelRL = await fetch('obj/wheels/wheel_rear_left.obj');  
+      const textWheelRL = await responseWheelRL.text();
+      const wheelRLobj = parser(textWheelRL)
+      const  extractWheelRL = carVisitor.visit(wheelRLobj)[0];
+
+      const responseWheelRR = await fetch('obj/wheels/wheel_rear_right.obj');  
+      const textWheelRR = await responseWheelRR.text();
+      const wheelRRobj = parser(textWheelRR)
+      const  extractWheelRR = carVisitor.visit(wheelRRobj)[0];
+      // Init
       const carTV = new CarViewLoading(
           glTV,
           canvasTV,
@@ -191,7 +216,7 @@ async function main(video, alphas, carTex, alphaTVs, icons) {
           vsCar,
           fsCar,
           0.6,
-          'topview'
+          'topview',
       )
       const carSVM = new CarViewLoading(
           gl,
@@ -200,13 +225,15 @@ async function main(video, alphas, carTex, alphaTVs, icons) {
           extractCarArray,
           vsCar,
           fsCar,
-          0.61
+          0.61,
+          'surrounding',
+          [extractWheelFL, extractWheelFR, extractWheelRL, extractWheelRR]
       )
       const singleViewLoading = new LoadScene(gl, canvas, video, 
                                             [leftView, frontView, rearView, rightView],
                                             [leftViewUV, frontViewUV, rearViewUV, rightViewUV]
                                             );
-      console.log([frontLeftView, frontRightView])
+     
       const tireViewLoading = new LoadSceneTire(gl, canvas, video, 
                                             [frontLeftView, frontRightView, rearLeftView, rearRightView], 
                                             [frontLeftViewUV,  frontRightViewUV, rearLeftViewUV, rearRightViewUV], 
@@ -223,17 +250,26 @@ async function main(video, alphas, carTex, alphaTVs, icons) {
       //   canvasTV,
       //   icons[1],
       // )
-
-      let fps = 25;
-      time = 0.01
-      function render(time) {
-        time *= 0.01
-          gl.clearColor(0,0,0,1);
-          gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+      let frames = carState.next().value;
+      let duration = video.duration;
+      let fps = 35;
+      let carStateUpdate = carState.next().value;;
+      
+      let defaultTimeStamp = carStateUpdate;
+      let time = 0.01
+      let start = false;
+      function render() {
+        if (video.currentTime == 0) {
+          // console.log("YEs")
+          carStateUpdate = defaultTimeStamp;
+        }
+        
+        gl.clearColor(0,0,0,1);
+        gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
 
             svmtview.render(
                 [-90,-180,0], 
-                90
+                88
             )
             carTV.render(
                 [-90, -180, 0],
@@ -256,47 +292,54 @@ async function main(video, alphas, carTex, alphaTVs, icons) {
             svm.render(
               [state.app.angle.x, state.app.angle.y, 0],
               // [0,0,0],
-              36
+              37.5
             )
             carSVM.render(
               [state.app.angle.x, state.app.angle.y, 0],
               // [0,0,0],
-              36
+              36,
+              carStateUpdate,
             )
           }
           else
-            if (state.ui.mode.split(' ')[0] != 'tire') {
-              singleViewLoading.render(
+          if (state.ui.mode.split(' ')[0] != 'tire') {
+            singleViewLoading.render(
               
-                [0, 0, 0],
+              [0, 0, 0],
               
-                60,
-                state.ui.mode
+              60,
+              state.ui.mode
               )
-            
-                
+              
+              
             } else
             {
-             
+              
               tireViewLoading.render(
                 [0, 0, 0],
-
+                
                 60,
                 state.ui.mode.split(' ')[1]
-              )
+                )
             }
-         
-  
-          setTimeout(() => {
-              requestAnimationFrame(render);
-            }, 1000 / fps);
+              
+            while (video.currentTime*1000 > (carStateUpdate[0] - defaultTimeStamp[0]))
+               carStateUpdate = carState.next().value;
+            
+            
+            if (carStateUpdate)
+              setTimeout(() => {
+                requestAnimationFrame(render);
+              }, 1000/fps);
+            
+           
       }
       requestAnimationFrame(render);
   }
   
   loadVideoAndImages(
     "video/video_in.mp4", 
-    ['obj/scalib/alpha_0.png', 'obj/scalib/alpha_1.png', 'obj/scalib/alpha_2.png', 'obj/scalib/alpha_3.png'], 'obj/E34_Tex_Luxury_Blue.bmp', 
+    ['obj/scalib/alpha_0.png', 'obj/scalib/alpha_1.png', 'obj/scalib/alpha_2.png', 'obj/scalib/alpha_3.png'], 'obj/Car_Tex_Gray.bmp', 
     ['obj/alpha/alpha_TV_0.png', 'obj/alpha/alpha_TV_1.png', 'obj/alpha/alpha_TV_2.png', 'obj/alpha/alpha_TV_3.png'], 
     ['img/fronticon.png', 'img/rearicon.png'],
     main
@@ -383,3 +426,4 @@ async function main(video, alphas, carTex, alphaTVs, icons) {
     state.ui.mode = 'tire rear';
   
   });
+
